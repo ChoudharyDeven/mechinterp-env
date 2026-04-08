@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "mechinterp-env"
+version = "1.0.0"
+description = "RL environment for mechanistic interpretability circuit debugging"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+keywords = [
+    "mechanistic-interpretability",
+    "reinforcement-learning",
+    "transformers",
+    "ai-safety",
+    "openenv",
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+    "httpx>=0.24.0",
+    "openai>=1.0.0",
+]
+
+[project.optional-dependencies]
+server = [
+    "numpy>=1.24.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+]
+client = [
+    "httpx>=0.24.0",
+    "openai>=1.0.0",
+    "pydantic>=2.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mechinterp_env*", "server*", "data*"]
+
+[tool.setuptools.package-data]
+"data.circuits" = ["*.json"]

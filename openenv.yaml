@@ -1,0 +1,150 @@
+name: mechinterp-env
+version: "1.0.0"
+description: >
+  RL environment for mechanistic interpretability circuit debugging.
+  An agent identifies which attention heads in a small transformer model
+  are responsible for a specific behavior (the "circuit"), using activation
+  patching, head ablation, logit lens queries, and attention pattern analysis.
+  Built on numpy toy transformers with planted circuits of known ground truth —
+  every grader score is provably correct by construction.
+author: your-hf-username
+license: MIT
+
+tasks:
+  - id: head-identification
+    description: >
+      Identify the single attention head responsible for a copy behavior.
+      Pre-run ablation results are provided in the initial observation.
+      Read the behavioral_delta values and submit the correct head.
+    difficulty: easy
+    max_steps: 4
+    reward_range: [0.0, 1.0]
+
+  - id: circuit-localization
+    description: >
+      Discover the two-head induction circuit in a 2-layer model.
+      No pre-run results provided — design and run your own experiments.
+      Budget: 12 steps. One circuit head per layer.
+    difficulty: medium
+    max_steps: 12
+    reward_range: [0.0, 1.0]
+
+  - id: full-hypothesis
+    description: >
+      Identify a 5-head multi-layer circuit in a 4-layer, 8-head model.
+      Search space: 32 heads. Budget: 20 steps. Partial credit via weighted F1.
+    difficulty: hard
+    max_steps: 20
+    reward_range: [0.0, 1.0]
+
+observation_space:
+  type: object
+  description: Structured observation returned after each reset() or step()
+  fields:
+    - name: target_behavior
+      type: string
+      description: Natural language description of the behavioral anomaly to investigate
+    - name: action_taken
+      type: string
+      description: Description of the last action taken
+    - name: action_result
+      type: object
+      description: >
+        Numerical result of the last action. For ablate_head: {ablated_head,
+        baseline_prob, ablated_prob, behavioral_delta, interpretation}.
+        For query_logit_lens: {layer, position, top5_tokens}.
+        For query_attn_pattern: {layer, head, attention_summary}.
+        For submit_hypothesis: {circuit_f1, your_hypothesis, ground_truth}.
+    - name: behavioral_delta
+      type: float
+      description: Change in target token probability after the last action (negative = head matters)
+    - name: experiment_history
+      type: array
+      description: Last 8 experiment records with step, action_type, layer, head, behavioral_delta
+    - name: steps_remaining
+      type: integer
+      description: Steps left in this episode
+    - name: available_actions
+      type: array
+      description: List of valid action strings for this task
+    - name: prompt_pool
+      type: array
+      description: Available prompts for patching experiments
+    - name: done
+      type: boolean
+    - name: reward
+      type: float
+      description: Step-level reward for the last action
+
+action_space:
+  type: object
+  description: >
+    JSON object specifying the action type and its parameters.
+    action_type is required; other fields depend on action_type.
+  fields:
+    - name: action_type
+      type: string
+      required: true
+      enum:
+        - ablate_head
+        - patch_activation
+        - query_logit_lens
+        - query_attn_pattern
+        - submit_hypothesis
+    - name: layer
+      type: integer
+      required_for: [ablate_head, patch_activation, query_logit_lens, query_attn_pattern]
+    - name: head
+      type: integer
+      required_for: [ablate_head, patch_activation, query_attn_pattern]
+    - name: position
+      type: integer
+      required_for: [patch_activation, query_logit_lens]
+    - name: source_prompt_id
+      type: integer
+      required_for: [patch_activation]
+    - name: prompt_id
+      type: integer
+      required_for: [query_attn_pattern]
+    - name: circuit_mask
+      type: object
+      required_for: [submit_hypothesis]
+      description: >
+        Object with "components" field mapping "(layer, head)" strings to
+        importance scores in [0, 1]. Example:
+        {"components": {"(0, 2)": 1.0, "(1, 1)": 0.6}}
+
+reward_shaping:
+  step_rewards:
+    - name: information_gain
+      formula: "|behavioral_delta| * 0.3"
+      applies_to: [ablate_head, patch_activation]
+    - name: high_delta_bonus
+      value: 0.10
+      condition: "behavioral_delta < -0.35"
+    - name: redundancy_penalty
+      value: -0.10
+      condition: "same (layer, head) queried more than once"
+    - name: efficiency_penalty
+      value: -0.05
+      condition: "step_count > 8"
+  terminal_rewards:
+    - name: circuit_f1
+      formula: "circuit_f1 * 2.0 (primary signal)"
+    - name: speed_bonus
+      value: 0.30
+      condition: "circuit_f1 >= 0.8 and steps <= max_steps / 2"
+    - name: attempt_bonus
+      value: 0.05
+      description: "Reward for submitting a hypothesis (vs timing out)"
+    - name: normalization
+      formula: "total / 2.35 (clamps to [0, 1])"
+
+tags:
+  - mechanistic-interpretability
+  - ai-safety
+  - transformers
+  - circuit-discovery
+  - openenv
+  - numpy
+  - toy-models
