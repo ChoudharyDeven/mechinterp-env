@@ -72,3 +72,13 @@ async def root():
         "tasks":       ["head-identification", "circuit-localization", "full-hypothesis"],
         "endpoints":   ["/reset", "/step", "/state", "/health"],
     }
+
+
+def main():
+    """Entry point for the server. Called by the [project.scripts] entry point."""
+    import uvicorn
+    uvicorn.run("server.app:app", host="0.0.0.0", port=7860, workers=1)
+
+
+if __name__ == "__main__":
+    main()
