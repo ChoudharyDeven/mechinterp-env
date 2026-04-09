@@ -405,7 +405,8 @@ async def run_task(
                 # If episode ended via submit_hypothesis, extract score
                 if done:
                     result = obs.get("action_result", {})
-                    score  = float(result.get("circuit_f1", 0.0))
+                    raw_score = float(result.get("circuit_f1", 0.0))
+                    score  = round(min(max(raw_score, 0.001), 0.999), 4)
                     success = score >= 0.5
                     break
 
@@ -420,7 +421,8 @@ async def run_task(
 
                 reward  = float(obs.get("reward", 0.0))
                 result  = obs.get("action_result", {})
-                score   = float(result.get("circuit_f1", 0.0))
+                raw_score = float(result.get("circuit_f1", 0.0))
+                score   = round(min(max(raw_score, 0.001), 0.999), 4)
                 success = score >= 0.5
                 rewards.append(reward)
                 steps_taken += 1

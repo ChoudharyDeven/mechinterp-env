@@ -91,7 +91,7 @@ def compute_terminal_reward(
     # 3. Attempt bonus: submitted something (vs running out of steps silently)
     reward += 0.05
 
-    # Normalize to [0, 1]
+    # Normalize to (0, 1) exclusive
     MAX_REWARD = 2.35
     normalized = reward / MAX_REWARD
-    return round(min(max(normalized, 0.0), 1.0), 4)
+    return round(min(max(normalized, 0.001), 0.999), 4)
