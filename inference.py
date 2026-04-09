@@ -16,11 +16,22 @@ Usage:
   MECHINTERP_ENV_URL=https://your-space.hf.space python inference.py
 """
 
+# ── Auto-install missing dependencies ────────────────────────────────────────
+import subprocess
+import sys
+
+_REQUIRED = ["openai", "httpx", "numpy", "pydantic"]
+for _pkg in _REQUIRED:
+    try:
+        __import__(_pkg)
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", _pkg, "-q"])
+# ─────────────────────────────────────────────────────────────────────────────
+
 import asyncio
 import json
 import os
 import re
-import sys
 from typing import Dict, List, Optional
 
 import httpx
